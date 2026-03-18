@@ -1,0 +1,193 @@
+/* === РОДНЫЕ ПАПКИ В ИНТЕРФЕЙСЕ (ИДЕАЛЬНЫЙ ВИЗУАЛ) === */
+.bb-folder {
+    margin-bottom: 12px;
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1)) !important;
+    border-left: 4px solid var(--folder-color, #a855f7) !important;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.15) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: box-shadow 0.2s;
+    box-sizing: border-box !important;
+    width: 100%;
+}
+
+.bb-folder:hover {
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+
+.bb-folder > .bb-folder-toggle {
+    background: var(--SmartThemeUserMessageColor, rgba(255,255,255,0.05)) !important;
+    border-radius: 5px; 
+    cursor: pointer;
+    padding: 12px 14px !important;
+    display: flex;
+    align-items: center;
+    border: none !important;
+    border-bottom: 1px solid transparent !important;
+    transition: background 0.2s, border-radius 0.2s;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+.bb-folder > .bb-folder-toggle:hover {
+    background: var(--SmartThemeHoverColor, rgba(255,255,255,0.1)) !important;
+}
+
+.bb-folder.open > .bb-folder-toggle {
+    border-radius: 5px 5px 0 0 !important;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1)) !important;
+    background: linear-gradient(90deg, var(--SmartThemeUserMessageColor, rgba(255,255,255,0.05)), transparent) !important;
+}
+
+.bb-folder-content {
+    padding: 12px 14px 2px 20px !important; 
+    border: none !important; 
+    border-radius: 0 0 5px 5px !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+
+.bb-folder-content:empty {
+    padding-bottom: 12px !important;
+}
+.bb-folder-content:empty::before {
+    content: "(Пустая папка)";
+    display: block;
+    text-align: center;
+    color: rgba(255,255,255,0.2);
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* === ВСТРОЕННАЯ ПАЛИТРА ЦВЕТОВ === */
+.bb-color-picker {
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    overflow: hidden;
+    padding: 0;
+    background: none;
+}
+.bb-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.bb-color-picker::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.3); border-radius: 50%; }
+
+/* === ПУЛЬТ УПРАВЛЕНИЯ === */
+#bb-sort-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.7);
+    z-index: 999999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(2px);
+}
+
+.bb-modal-grid {
+    display: flex; /* Flex лучше распределяет колонки */
+    gap: 15px;
+    margin-top: 10px;
+    align-items: stretch;
+}
+
+.bb-modal-col {
+    flex: 1; /* Чтобы колонки были одинаковой ширины (50/50) */
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
+    border-radius: 5px;
+    padding: 10px 10px 150px 10px !important; 
+    
+    /* ФИКС ФОНА: Гарантирует, что тень и фон растянутся вниз, если мы создали много папок и появился скролл */
+    min-height: max-content; 
+    
+    box-sizing: border-box !important;
+    display: block !important; 
+}
+
+.bb-modal-col-title {
+    text-align: center;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--SmartThemeTextColor, #fff);
+    opacity: 0.5;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+.bb-light-item {
+    background: var(--SmartThemeUserMessageColor, rgba(255,255,255,0.05));
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
+    color: var(--SmartThemeTextColor, #fff);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 0 0 6px 0 !important; /* Жесткий марджин, чтобы не слипались */
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.1s;
+}
+.bb-light-item:hover { background: var(--SmartThemeHoverColor, rgba(255,255,255,0.1)); }
+.bb-light-item:active { cursor: grabbing; }
+
+.bb-light-folder {
+    background: var(--SmartThemeBotMessageColor, rgba(0,0,0,0.2));
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
+    border-left: 4px solid var(--folder-color, #a855f7);
+    display: block; 
+    
+    /* СОЗДАЕМ ОГРОМНУЮ ПУСТУЮ ПРОПАСТЬ МЕЖДУ ПАПКАМИ (25px). 
+       Как только курсор при вытаскивании расширения попадет на неё — оно мгновенно выпрыгнет наружу! */
+    margin-bottom: 25px !important; 
+    padding-bottom: 10px !important; 
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Добавил легкую тень самим папкам для красоты */
+}
+
+.bb-light-folder::after {
+    display: none !important;
+}
+
+.bb-light-folder-content {
+    margin-left: 15px;
+    padding: 10px 10px 5px 10px !important; 
+    border-left: 2px dashed var(--folder-color, rgba(168, 85, 247, 0.3));
+    min-height: 20px; 
+    margin-top: 10px;
+    transition: background 0.2s, min-height 0.2s;
+}
+
+body.bb-dragging-folder .bb-light-folder-content {
+    pointer-events: none !important; 
+    background: rgba(239, 68, 68, 0.05) !important; 
+    border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* При перетаскивании обычного расширения слегка раздвигаем дно пустых папок, чтобы туда было легко прицелиться */
+body.bb-dragging-ext .bb-light-folder-content {
+    min-height: 45px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.bb-sortable-placeholder {
+    border: 2px dashed var(--folder-color, #a855f7) !important;
+    background: rgba(168, 85, 247, 0.1) !important;
+    border-radius: 5px;
+    margin: 0 0 6px 0 !important;
+    visibility: visible !important;
+}
+
+/* === ЭФФЕКТ ПРИ ПЕРЕТАСКИВАНИИ (ЛЕТАЮЩАЯ ПЛАШКА) === */
+.ui-sortable-helper.bb-light-item {
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6) !important;
+    opacity: 0.95 !important;
+    transform: rotate(2deg) scale(1.02); 
+    cursor: grabbing !important;
+    border-color: var(--folder-color, #a855f7) !important;
+}
