@@ -90,22 +90,19 @@
 }
 
 .bb-modal-grid {
-    display: flex; /* Flex лучше распределяет колонки */
+    display: flex;
     gap: 15px;
     margin-top: 10px;
     align-items: stretch;
 }
 
 .bb-modal-col {
-    flex: 1; /* Чтобы колонки были одинаковой ширины (50/50) */
+    flex: 1;
     background: rgba(0,0,0,0.2);
     border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
     border-radius: 5px;
     padding: 10px 10px 150px 10px !important; 
-    
-    /* ФИКС ФОНА: Гарантирует, что тень и фон растянутся вниз, если мы создали много папок и появился скролл */
     min-height: max-content; 
-    
     box-sizing: border-box !important;
     display: block !important; 
 }
@@ -120,34 +117,45 @@
     letter-spacing: 1px;
 }
 
+/* === РУЧКИ ДЛЯ ПЕРЕТАСКИВАНИЯ === */
+.bb-drag-handle {
+    cursor: grab;
+    color: var(--SmartThemeBorderColor, rgba(255,255,255,0.3));
+    padding: 5px 8px 5px 0;
+    touch-action: none; /* Блокируем скролл только на самой иконке */
+}
+.bb-drag-handle:active {
+    cursor: grabbing;
+}
+.bb-light-folder-header {
+    display: flex;
+    align-items: center;
+}
+
 .bb-light-item {
     background: var(--SmartThemeUserMessageColor, rgba(255,255,255,0.05));
     border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
     color: var(--SmartThemeTextColor, #fff);
     padding: 10px;
     border-radius: 5px;
-    margin: 0 0 6px 0 !important; /* Жесткий марджин, чтобы не слипались */
-    cursor: grab;
+    margin: 0 0 6px 0 !important;
+    cursor: default; /* Убрали grab с самой плашки */
     display: flex;
     align-items: center;
     gap: 10px;
     transition: background 0.1s;
 }
 .bb-light-item:hover { background: var(--SmartThemeHoverColor, rgba(255,255,255,0.1)); }
-.bb-light-item:active { cursor: grabbing; }
 
 .bb-light-folder {
     background: var(--SmartThemeBotMessageColor, rgba(0,0,0,0.2));
     border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
     border-left: 4px solid var(--folder-color, #a855f7);
     display: block; 
-    
-    /* СОЗДАЕМ ОГРОМНУЮ ПУСТУЮ ПРОПАСТЬ МЕЖДУ ПАПКАМИ (25px). 
-       Как только курсор при вытаскивании расширения попадет на неё — оно мгновенно выпрыгнет наружу! */
     margin-bottom: 25px !important; 
     padding-bottom: 10px !important; 
     border-radius: 5px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Добавил легкую тень самим папкам для красоты */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .bb-light-folder::after {
@@ -169,7 +177,6 @@ body.bb-dragging-folder .bb-light-folder-content {
     border-color: rgba(239, 68, 68, 0.2) !important;
 }
 
-/* При перетаскивании обычного расширения слегка раздвигаем дно пустых папок, чтобы туда было легко прицелиться */
 body.bb-dragging-ext .bb-light-folder-content {
     min-height: 45px;
     background: rgba(255, 255, 255, 0.02);
@@ -188,6 +195,141 @@ body.bb-dragging-ext .bb-light-folder-content {
     box-shadow: 0 15px 35px rgba(0,0,0,0.6) !important;
     opacity: 0.95 !important;
     transform: rotate(2deg) scale(1.02); 
-    cursor: grabbing !important;
     border-color: var(--folder-color, #a855f7) !important;
+}
+
+/* === АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ === */
+
+/* Модальное окно на узких экранах */
+@media (max-width: 768px) {
+    #bb-sort-modal-overlay .popup {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        margin: 10px;
+    }
+
+    /* Одна колонка вместо двух */
+    .bb-modal-grid {
+        flex-direction: column !important;
+        gap: 10px;
+    }
+
+    .bb-modal-col {
+        width: 100% !important;
+        padding: 10px 10px 50px 10px !important;
+    }
+
+    .bb-modal-col-title {
+        font-size: 11px;
+        margin-bottom: 8px;
+    }
+
+    .bb-light-item {
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    /* Увеличиваем ручку на мобилках, чтобы по ней было легче попасть пальцем */
+    .bb-drag-handle {
+        padding: 10px 15px 10px 5px !important;
+        font-size: 18px;
+    }
+
+    .bb-light-folder {
+        margin-bottom: 15px !important;
+    }
+
+    .bb-light-folder-content {
+        margin-left: 10px;
+        padding: 8px !important;
+    }
+
+    .popup-content {
+        max-height: 50vh !important;
+    }
+
+    @media (max-width: 480px) {
+        #bb-sort-modal-overlay .popup > div:last-child {
+            flex-direction: column !important;
+        }
+
+        #bb-sort-modal-overlay .popup > div:last-child > div {
+            width: 100%;
+        }
+
+        #bb-modal-add-folder,
+        #bb-modal-cancel,
+        #bb-modal-save {
+            width: 100% !important;
+            justify-content: center;
+        }
+    }
+}
+
+/* Кнопка "Управление сортировкой" на мобильных */
+@media (max-width: 600px) {
+    #bb-open-sorter-btn span {
+        display: none;
+    }
+
+    #bb-open-sorter-btn {
+        padding: 8px 12px;
+        min-width: auto;
+    }
+
+    #bb-open-sorter-btn i {
+        margin: 0 !important;
+    }
+}
+
+/* Родные папки на мобильных */
+@media (max-width: 768px) {
+    .bb-folder > .bb-folder-toggle {
+        padding: 10px 12px !important;
+        font-size: 14px;
+    }
+
+    .bb-folder-content {
+        padding: 10px 12px 2px 15px !important;
+    }
+
+    .bb-color-picker {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .bb-del-btn,
+    .bb-edit-btn,
+    .bb-folder-edit-main {
+        padding: 8px;
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .inline-drawer-icon {
+        padding: 8px;
+    }
+}
+
+/* Фикс скролла на iOS/Chrome */
+#bb-sort-modal-overlay .popup-content {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .bb-sortable-placeholder {
+        min-height: 50px !important;
+        border-width: 3px !important;
+    }
+}
+
+/* Отступ для иконки папки в пульте */
+.bb-light-folder-header .fa-folder {
+    margin-right: 8px !important;
 }
