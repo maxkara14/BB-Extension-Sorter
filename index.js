@@ -1,5 +1,12 @@
+// @ts-nocheck
 import { saveSettingsDebounced } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
+
+// === TOUCH SUPPORT (ДЛЯ МОБИЛЬНЫХ) ===
+(function(){
+    if (typeof jQuery === 'undefined' || typeof jQuery.ui === 'undefined') return;
+    !function(a){function f(a,b){if(!(a.originalEvent.touches.length>1)){a.preventDefault();var c=a.originalEvent.changedTouches[0],d=document.createEvent("MouseEvents");d.initMouseEvent(b,!0,!0,window,1,c.screenX,c.screenY,c.clientX,c.clientY,!1,!1,!1,!1,0,null),a.target.dispatchEvent(d)}}if(a.support.touch="ontouchend"in document,a.support.touch){var e,b=a.ui.mouse.prototype,c=b._mouseInit,d=b._mouseDestroy;b._touchStart=function(a){var b=this;!e&&b._mouseCapture(a.originalEvent.changedTouches[0])&&(e=!0,b._touchMoved=!1,f(a,"mouseover"),f(a,"mousemove"),f(a,"mousedown"))},b._touchMove=function(a){e&&(this._touchMoved=!0,f(a,"mousemove"))},b._touchEnd=function(a){e&&(f(a,"mouseup"),f(a,"mouseout"),this._touchMoved||f(a,"click"),e=!1)},b._mouseInit=function(){var b=this;b.element.bind({touchstart:a.proxy(b,"_touchStart"),touchmove:a.proxy(b,"_touchMove"),touchend:a.proxy(b,"_touchEnd")}),c.call(b)},b._mouseDestroy=function(){var b=this;b.element.unbind({touchstart:a.proxy(b,"_touchStart"),touchmove:a.proxy(b,"_touchMove"),touchend:a.proxy(b,"_touchEnd")}),d.call(b)}}}(jQuery);
+})();
 
 const MODULE_NAME = "BB-Extension-Sorter";
 
@@ -161,66 +168,50 @@ function restoreLayout() {
     if (layout.right) processCol('#extensions_settings2', layout.right);
 }
 
-// === СОРТИРОВКА В ПУЛЬТЕ (АППАРАТНАЯ БЛОКИРОВКА ВЛОЖЕННОСТИ) ===
+// === СОРТИРОВКА В ПУЛЬТЕ ===
 function initModalSortable() {
-    const mainCols = $('.bb-modal-col'); 
-    const folderContents = $('.bb-light-folder-content');
-
-    // Настройка для главных колонок
-    // @ts-ignore
-    mainCols.sortable({ 
+    const sortableOptions = {
         connectWith: '.bb-modal-col, .bb-light-folder-content',
         items: '> .bb-light-item',
+        handle: '.bb-drag-handle', // <--- ВОТ ОНО! Хватаем только за ручку
         placeholder: 'bb-sortable-placeholder',
         tolerance: 'pointer',
         cursor: 'grabbing',
-        helper: 'clone', 
-        appendTo: '#bb-sort-modal-overlay', 
+        helper: 'clone',
+        appendTo: '#bb-sort-modal-overlay',
         zIndex: 999999,
-        revert: 150, 
+        revert: 150,
         forcePlaceholderSize: true,
-        refreshPositions: true, 
-        start: function(e, ui) {
-            // @ts-ignore
-            ui.placeholder.height(ui.item.outerHeight());
+        refreshPositions: true,
+        delay: 50 // Оставил минимальную задержку от случайных микро-свайпов
+    };
 
-            // ВАЖНО: Активируем "силовой щит" на body, если тащим папку!
+    // Применяем к колонкам
+    $('.bb-modal-col').sortable({
+        ...sortableOptions,
+        start: function(e, ui) {
+            ui.placeholder.height(ui.item.outerHeight());
             if (ui.item.hasClass('bb-light-folder')) {
-                $('body').addClass('bb-dragging-folder'); // <--- Щит включен!
-                // @ts-ignore
-                mainCols.sortable('option', 'connectWith', '.bb-modal-col');
-                // @ts-ignore
-                mainCols.sortable('refresh');
+                $('body').addClass('bb-dragging-folder');
+                $('.bb-modal-col').sortable('option', 'connectWith', '.bb-modal-col');
+                $('.bb-modal-col').sortable('refresh');
             } else {
                 $('body').addClass('bb-dragging-ext');
             }
         },
         stop: function(e, ui) {
-            // Снимаем классы при отпускании мыши
             $('body').removeClass('bb-dragging-folder bb-dragging-ext');
-            // @ts-ignore
-            mainCols.sortable('option', 'connectWith', '.bb-modal-col, .bb-light-folder-content');
+            $('.bb-modal-col').sortable('option', 'connectWith', '.bb-modal-col, .bb-light-folder-content');
         }
     });
 
-    // Настройка для внутренностей папки
-    // @ts-ignore
-    folderContents.sortable({ 
-        connectWith: '.bb-modal-col, .bb-light-folder-content',
-        items: '> .bb-light-item:not(.bb-light-folder)', 
-        placeholder: 'bb-sortable-placeholder',
-        tolerance: 'pointer',
-        cursor: 'grabbing',
-        helper: 'clone', 
-        appendTo: '#bb-sort-modal-overlay', 
-        zIndex: 999999,
-        revert: 150, 
-        forcePlaceholderSize: true,
-        refreshPositions: true,
+    // Применяем к содержимому папок
+    $('.bb-light-folder-content').sortable({
+        ...sortableOptions,
+        items: '> .bb-light-item:not(.bb-light-folder)',
         start: function(e, ui) {
-            // @ts-ignore
             ui.placeholder.height(ui.item.outerHeight());
-            $('body').addClass('bb-dragging-ext'); // Подсвечиваем пустые папки
+            $('body').addClass('bb-dragging-ext');
         },
         stop: function(e, ui) {
             $('body').removeClass('bb-dragging-ext');
@@ -239,7 +230,11 @@ function openSorterModal() {
         const eName = getTitle(el);
         if (eName && !foundExts.has(eName)) {
             foundExts.add(eName);
-            return `<div class="bb-light-item" data-type="ext" data-title="${eName}"><i class="fa-solid fa-puzzle-piece"></i> ${eName}</div>`;
+            // Добавил иконку-ручку (.bb-drag-handle) перед пазлом
+            return `<div class="bb-light-item" data-type="ext" data-title="${eName}">
+                        <i class="fa-solid fa-grip-vertical bb-drag-handle"></i>
+                        <i class="fa-solid fa-puzzle-piece"></i> ${eName}
+                    </div>`;
         }
         return '';
     };
@@ -255,6 +250,7 @@ function openSorterModal() {
                 html += `
                     <div class="bb-light-item bb-light-folder" data-type="folder" data-title="${fName}" data-color="${fColor}" style="--folder-color: ${fColor};">
                         <div class="bb-light-folder-header">
+                            <i class="fa-solid fa-grip-vertical bb-drag-handle" style="margin-right: 8px;"></i>
                             <i class="fa-solid fa-folder" style="color: var(--folder-color);"></i> <b class="folder-title-text" style="color: var(--folder-color);">${fName}</b>
                             <i class="fa-solid fa-pen bb-edit-btn" style="margin-left:auto; cursor:pointer;" title="Переименовать"></i>
                             <i class="fa-solid fa-trash bb-del-btn" style="color:#ef4444; margin-left:10px; cursor:pointer;" title="Удалить"></i>
@@ -312,6 +308,7 @@ function openSorterModal() {
             $('#bb-modal-left').append(`
                 <div class="bb-light-item bb-light-folder" data-type="folder" data-title="${name}" data-color="#a855f7" style="--folder-color: #a855f7;">
                     <div class="bb-light-folder-header">
+                        <i class="fa-solid fa-grip-vertical bb-drag-handle" style="margin-right: 8px;"></i>
                         <i class="fa-solid fa-folder" style="color: var(--folder-color);"></i> <b class="folder-title-text" style="color: var(--folder-color);">${name}</b>
                         <i class="fa-solid fa-pen bb-edit-btn" style="margin-left:auto; cursor:pointer;" title="Переименовать"></i>
                         <i class="fa-solid fa-trash bb-del-btn" style="color:#ef4444; margin-left:10px; cursor:pointer;" title="Удалить"></i>
@@ -322,7 +319,7 @@ function openSorterModal() {
             initModalSortable(); 
         }
     });
-// Сначала отвязываем старые события через .off(), а затем вешаем новые!
+
     $('body').off('click', '.bb-del-btn').on('click', '.bb-del-btn', function() {
         const folder = $(this).closest('.bb-light-folder');
         const children = folder.find('.bb-light-folder-content > div');
@@ -335,8 +332,6 @@ function openSorterModal() {
         const oldName = folder.attr('data-title');
         const newName = prompt("Новое имя:", oldName);
         
-        // Я также добавил сюда проверку на пустые пробелы (trim), 
-        // чтобы нельзя было случайно назвать папку пустым местом (как ты делал для главных папок)
         if (newName && newName.trim() && newName.trim() !== oldName) {
             folder.attr('data-title', newName.trim());
             folder.find('.folder-title-text').text(newName.trim());
