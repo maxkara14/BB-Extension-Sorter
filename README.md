@@ -10,6 +10,14 @@
 
 ---
 
+<img width="959" height="318" alt="Screenshot_1" src="https://github.com/user-attachments/assets/87bd2258-bd5a-497a-aa09-b06e59c92a9c" />
+
+---
+
+<img width="960" height="786" alt="Screenshot_2" src="https://github.com/user-attachments/assets/505c600a-37eb-498e-a203-17ce1839a04e" />
+
+---
+
 **⚙️ Установка:**
 
 1. Откройте SillyTavern.
