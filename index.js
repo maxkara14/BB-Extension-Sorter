@@ -400,8 +400,9 @@ function openSorterModal() {
 function injectControls() {
     if ($('#bb-open-sorter-btn').length > 0) return;
     
+    // Добавил margin-bottom: 5px, чтобы на мобилках кнопка не прилипала к нижним элементам
     const btnHtml = `
-        <div id="bb-open-sorter-btn" class="menu_button interactable" style="display:inline-flex; align-items:center; gap:6px; margin-right:5px; border-color: var(--SmartThemeBorderColor, #a855f7);">
+        <div id="bb-open-sorter-btn" class="menu_button interactable" style="display:inline-flex; align-items:center; gap:6px; margin-right:5px; margin-bottom:5px; border-color: var(--SmartThemeBorderColor, #a855f7);">
             <i class="fa-solid fa-list-check"></i>
             <span>Управление сортировкой</span>
         </div>
@@ -409,10 +410,10 @@ function injectControls() {
 
     const targetBtn = $('.menu_button:has(.fa-cubes)').first();
     if (targetBtn.length > 0) {
-        targetBtn.parent().css({ 'display': 'flex', 'flex-wrap': 'wrap', 'align-items': 'center' });
+        // Убрали грязный хак с .parent().css(...), чтобы не ломать заводскую верстку Таверны!
         targetBtn.before(btnHtml);
     } else {
-        $('#extensions_settings').before(`<div style="display:flex; padding-bottom:10px;">${btnHtml}</div>`);
+        $('#extensions_settings').before(`<div style="margin-bottom:10px;">${btnHtml}</div>`);
     }
 
     $('#bb-open-sorter-btn').off('click').on('click', openSorterModal);
