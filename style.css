@@ -244,7 +244,7 @@ body.bb-dragging-ext .bb-light-folder-content {
         padding: 8px !important;
     }
 
-    .popup-content {
+    #bb-sort-modal-overlay .popup-content {
         max-height: 50vh !important;
     }
 
@@ -311,7 +311,7 @@ body.bb-dragging-ext .bb-light-folder-content {
         justify-content: center;
     }
 
-    .inline-drawer-icon {
+    .bb-folder .inline-drawer-icon {
         padding: 8px;
     }
 }
