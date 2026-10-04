@@ -14,6 +14,7 @@ const RESTORE_DEBOUNCE_MS = 250;
 let layoutObserver = null;
 let restoreTimer = null;
 let suppressLayoutObserver = 0;
+let restorePending = false;
 
 if (!extension_settings[MODULE_NAME]) {
     extension_settings[MODULE_NAME] = { layout: { left: [], right: [], folders: {} } };
@@ -155,7 +156,7 @@ function titleHasPrefix(value, prefix) {
 
 function extensionMatches(el, ref) {
     const identity = getExtensionIdentity(el);
-    if (ref.key && identity.key === ref.key) return true;
+    if (ref.key && identity.key) return identity.key === ref.key;
     return titlesMatch(ref.title, identity.title);
 }
 
@@ -169,10 +170,13 @@ function findExtension(item) {
     const ref = normalizeSavedExtensionRef(item);
     if (!ref.title && !ref.key) return null;
     let found = null;
+    let titleMatch = null;
     $('#extensions_settings > div, #extensions_settings2 > div, .bb-folder-content > div').not('.bb-folder').each(function() {
-        if (isRealExtension(this) && extensionMatches(this, ref)) { found = $(this); return false; }
+        if (!isRealExtension(this)) return;
+        if (ref.key && getExtensionKey(this) === ref.key) { found = $(this); return false; }
+        if (!titleMatch && extensionMatches(this, ref)) titleMatch = $(this);
     });
-    return found;
+    return found || titleMatch;
 }
 
 function withLayoutObserverSuppressed(callback) {
@@ -180,9 +184,9 @@ function withLayoutObserverSuppressed(callback) {
     try {
         return callback();
     } finally {
-        setTimeout(() => {
-            suppressLayoutObserver = Math.max(0, suppressLayoutObserver - 1);
-        }, 0);
+        // Discard our synchronous moves, without ignoring other extensions on the next tick.
+        layoutObserver?.takeRecords();
+        suppressLayoutObserver--;
     }
 }
 
@@ -202,7 +206,10 @@ function scheduleRestoreLayout(delay = RESTORE_DEBOUNCE_MS) {
 function isRelevantLayoutMutation(mutation) {
     if (mutation.type !== 'childList') return false;
     const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
-    return nodes.some(node => node.nodeType === Node.ELEMENT_NODE && isRealExtension(node));
+    return nodes.some(node => node.nodeType === Node.ELEMENT_NODE && (
+        isRealExtension(node)
+        || node.matches('.inline-drawer-header, .inline-drawer-toggle, .panel-heading')
+    ));
 }
 
 function initLayoutObserver() {
@@ -213,12 +220,49 @@ function initLayoutObserver() {
 
     layoutObserver = new MutationObserver((mutations) => {
         if (suppressLayoutObserver > 0) return;
-        if ($('#bb-sort-modal-overlay').length) return;
         if (!mutations.some(isRelevantLayoutMutation)) return;
         scheduleRestoreLayout();
     });
 
-    roots.forEach(root => layoutObserver.observe(root, { childList: true }));
+    roots.forEach(root => layoutObserver.observe(root, { childList: true, subtree: true }));
+}
+
+function closeSorterModal() {
+    $('#bb-sort-modal-overlay').remove();
+    if (restorePending) scheduleRestoreLayout(0);
+}
+
+function preserveMissingExtensions(layout, renamedFolders = {}) {
+    const previous = extension_settings[MODULE_NAME].layout;
+    const folderItems = data => Array.isArray(data) ? data : (data?.items || []);
+    const allItems = [
+        ...layout.left, ...layout.right,
+        ...Object.values(layout.folders).flatMap(folderItems),
+    ].filter(item => item.type !== 'folder');
+    const preserve = (items, target) => {
+        items.forEach((item, index) => {
+            if (item.type === 'folder' || findExtension(item)) return;
+            const ref = normalizeSavedExtensionRef(item);
+            if (allItems.some(current => {
+                const other = normalizeSavedExtensionRef(current);
+                return ref.key && other.key ? ref.key === other.key : titlesMatch(ref.title, other.title);
+            })) return;
+            const savedItem = { type: 'ext', title: ref.title };
+            if (ref.key) savedItem.key = ref.key;
+            target.splice(Math.min(index, target.length), 0, savedItem);
+            allItems.push(savedItem);
+        });
+    };
+    for (const side of ['left', 'right']) {
+        const items = previous?.[side] || [];
+        preserve(items, layout[side]);
+        items.filter(item => item.type === 'folder').forEach(item => {
+            const name = renamedFolders[item.title] || item.title;
+            // Deleting a folder releases even temporarily absent panels into its column.
+            const target = layout.folders[name]?.items || layout[side];
+            preserve(folderItems(previous.folders?.[item.title]), target);
+        });
+    }
 }
 
 // === УПРАВЛЕНИЕ РОДНЫМИ ПАПКАМИ ===
@@ -252,6 +296,7 @@ $('body').off('click', '.bb-folder > .bb-folder-toggle').on('click', '.bb-folder
 });
 
 $('body').off('change', '.bb-color-picker').on('change', '.bb-color-picker', function() {
+    restoreLayout();
     const folder = $(this).closest('.bb-folder');
     const color = $(this).val();
     folder.css('--folder-color', color);
@@ -260,17 +305,18 @@ $('body').off('change', '.bb-color-picker').on('change', '.bb-color-picker', fun
 });
 
 $('body').off('click', '.bb-folder-edit-main').on('click', '.bb-folder-edit-main', function() {
+    restoreLayout();
     const folder = $(this).closest('.bb-folder');
     const oldName = folder.attr('data-name');
     const newName = prompt("Новое имя папки:", oldName);
     if (newName && newName.trim() && newName.trim() !== oldName) {
         folder.attr('data-name', newName.trim());
         folder.find('.bb-folder-title').text('📁 ' + newName.trim());
-        saveLayoutMain();
+        saveLayoutMain({ [oldName]: newName.trim() });
     }
 });
 
-function saveLayoutMain() {
+function saveLayoutMain(renamedFolders = {}) {
     const layout = { left: [], right: [], folders: {} };
     
     const processCol = (selector, arr) => {
@@ -298,11 +344,17 @@ function saveLayoutMain() {
     processCol('#extensions_settings', layout.left);
     processCol('#extensions_settings2', layout.right);
 
+    preserveMissingExtensions(layout, renamedFolders);
     extension_settings[MODULE_NAME].layout = layout;
     saveSettingsDebounced();
 }
 
 function restoreLayout() {
+    if ($('#bb-sort-modal-overlay').length) {
+        restorePending = true;
+        return;
+    }
+    restorePending = false;
     const layout = extension_settings[MODULE_NAME].layout;
     if (!layout || !layout.folders) return;
 
@@ -393,6 +445,7 @@ function initModalSortable() {
 // === ПУЛЬТ УПРАВЛЕНИЯ ===
 function openSorterModal() {
     if ($('#bb-sort-modal-overlay').length) return;
+    restoreLayout();
 
     let foundExts = new Set();
     
@@ -424,7 +477,7 @@ function openSorterModal() {
                 const safeName = escapeHtml(fName);
                 const safeColor = escapeHtml(fColor);
                 html += `
-                    <div class="bb-light-item bb-light-folder" data-type="folder" data-title="${safeName}" data-color="${safeColor}" style="--folder-color: ${safeColor};">
+                    <div class="bb-light-item bb-light-folder" data-type="folder" data-title="${safeName}" data-original-title="${safeName}" data-color="${safeColor}" style="--folder-color: ${safeColor};">
                         <div class="bb-light-folder-header">
                             <i class="fa-solid fa-grip-vertical bb-drag-handle" style="margin-right: 8px;"></i>
                             <i class="fa-solid fa-folder" style="color: var(--folder-color);"></i> <b class="folder-title-text" style="color: var(--folder-color);">${safeName}</b>
@@ -515,10 +568,11 @@ function openSorterModal() {
         }
     });
 
-    $('#bb-modal-cancel').on('click', () => $('#bb-sort-modal-overlay').remove());
+    $('#bb-modal-cancel').on('click', closeSorterModal);
 
     $('#bb-modal-save').on('click', () => {
         const layout = { left: [], right: [], folders: {} };
+        const renamedFolders = {};
         const realLeftCol = $('#extensions_settings');
         const realRightCol = $('#extensions_settings2');
         
@@ -529,6 +583,8 @@ function openSorterModal() {
                 const key = $(this).attr('data-key') || null;
                 
                 if (type === 'folder') {
+                    const originalTitle = $(this).attr('data-original-title');
+                    if (originalTitle) renamedFolders[originalTitle] = title;
                     const color = $(this).attr('data-color') || '#a855f7';
                     createFolderElement(title, color); 
                     
@@ -547,15 +603,19 @@ function openSorterModal() {
                         const realExt = findExtension({ title: extTitle, key: extKey });
                         if (realExt) {
                             realFolder.find('.bb-folder-content').append(realExt);
-                            layout.folders[title].items.push(getLayoutExtItem(realExt, { title: extTitle, key: extKey }));
                         }
+                        layout.folders[title].items.push(realExt
+                            ? getLayoutExtItem(realExt, { title: extTitle, key: extKey })
+                            : { type: 'ext', title: extTitle, ...(extKey ? { key: extKey } : {}) });
                     });
                 } else {
                     const realExt = findExtension({ title, key });
                     if (realExt) {
                         realCol.append(realExt);
-                        targetArray.push(getLayoutExtItem(realExt, { title, key }));
                     }
+                    targetArray.push(realExt
+                        ? getLayoutExtItem(realExt, { title, key })
+                        : { type: 'ext', title, ...(key ? { key } : {}) });
                 }
             });
         };
@@ -570,9 +630,10 @@ function openSorterModal() {
             });
         });
 
+        preserveMissingExtensions(layout, renamedFolders);
         extension_settings[MODULE_NAME].layout = layout;
         saveSettingsDebounced();
-        $('#bb-sort-modal-overlay').remove();
+        closeSorterModal();
     });
 
     initModalSortable(); 
