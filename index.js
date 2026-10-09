@@ -460,7 +460,7 @@ function openSorterModal() {
             // Добавил иконку-ручку (.bb-drag-handle) перед пазлом
             return `<div class="bb-light-item" data-type="ext" data-title="${escapeHtml(eName)}" data-key="${escapeHtml(eKey || '')}">
                         <i class="fa-solid fa-grip-vertical bb-drag-handle"></i>
-                        <i class="fa-solid fa-puzzle-piece"></i> ${escapeHtml(eName)}
+                        <i class="fa-solid fa-puzzle-piece"></i> <span class="bb-ext-title">${escapeHtml(eName)}</span>
                     </div>`;
         }
         return '';
@@ -502,12 +502,12 @@ function openSorterModal() {
 
     const modalHtml = `
         <div id="bb-sort-modal-overlay">
-            <div class="popup wide_dialogue_popup flex-container flexGap" style="width: 800px; max-width: 90vw;">
+            <div class="popup wide_dialogue_popup bb-sort-modal">
                 <div class="popup-header">
                     <h2>Управление сортировкой</h2>
                 </div>
                 
-                <div class="popup-content bb-modal-grid" style="max-height: 60vh; overflow-y: auto;">
+                <div class="popup-content bb-modal-grid">
                     <div class="bb-modal-col" id="bb-modal-left">
                         <div class="bb-modal-col-title">Левая колонка</div>
                         ${leftColHtml}
@@ -518,9 +518,9 @@ function openSorterModal() {
                     </div>
                 </div>
                 
-                <div style="display: flex; gap: 10px; justify-content: space-between; margin-top: 15px;">
+                <div class="bb-sort-footer">
                     <div class="menu_button interactable" id="bb-modal-add-folder"><i class="fa-solid fa-folder-plus"></i>&nbsp;Создать папку</div>
-                    <div style="display: flex; gap: 10px;">
+                    <div class="bb-sort-footer-actions">
                         <div class="menu_button interactable" id="bb-modal-cancel">Отмена</div>
                         <div class="menu_button interactable" id="bb-modal-save" style="border-color: var(--SmartThemeBorderColor, #a855f7);">Применить</div>
                     </div>

@@ -80,13 +80,78 @@
 /* === ПУЛЬТ УПРАВЛЕНИЯ === */
 #bb-sort-modal-overlay {
     position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
+    inset: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    box-sizing: border-box;
     background: rgba(0,0,0,0.7);
     z-index: 999999;
     display: flex;
     justify-content: center;
     align-items: center;
     backdrop-filter: blur(2px);
+}
+
+#bb-sort-modal-overlay .bb-sort-modal {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    width: 800px;
+    max-width: 100% !important;
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+#bb-sort-modal-overlay .popup-header,
+#bb-sort-modal-overlay .bb-sort-footer {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+#bb-sort-modal-overlay .popup-header h2 {
+    margin: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+#bb-sort-modal-overlay .popup-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    max-height: none !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+
+.bb-sort-footer,
+.bb-sort-footer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.bb-sort-footer {
+    justify-content: space-between;
+    margin-top: 12px;
+}
+
+#bb-sort-modal-overlay .bb-sort-footer .menu_button {
+    box-sizing: border-box;
+    margin: 0;
+    min-width: 0;
+    width: auto;
+    white-space: nowrap;
+    justify-content: center;
 }
 
 .bb-modal-grid {
@@ -97,11 +162,12 @@
 }
 
 .bb-modal-col {
-    flex: 1;
+    flex: 1 0 0;
+    min-width: 0;
     background: rgba(0,0,0,0.2);
     border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
     border-radius: 5px;
-    padding: 10px 10px 150px 10px !important; 
+    padding: 10px 10px 30px 10px !important;
     min-height: max-content; 
     box-sizing: border-box !important;
     display: block !important; 
@@ -130,6 +196,21 @@
 .bb-light-folder-header {
     display: flex;
     align-items: center;
+    min-width: 0;
+}
+
+#bb-sort-modal-overlay .folder-title-text,
+#bb-sort-modal-overlay .bb-ext-title {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+#bb-sort-modal-overlay .bb-light-item > i,
+#bb-sort-modal-overlay .bb-light-folder-header > i {
+    flex-shrink: 0;
 }
 
 .bb-light-item {
@@ -202,12 +283,6 @@ body.bb-dragging-ext .bb-light-folder-content {
 
 /* Модальное окно на узких экранах */
 @media (max-width: 768px) {
-    #bb-sort-modal-overlay .popup {
-        width: 95vw !important;
-        max-width: 95vw !important;
-        margin: 10px;
-    }
-
     /* Одна колонка вместо двух */
     .bb-modal-grid {
         flex-direction: column !important;
@@ -216,7 +291,8 @@ body.bb-dragging-ext .bb-light-folder-content {
 
     .bb-modal-col {
         width: 100% !important;
-        padding: 10px 10px 50px 10px !important;
+        flex: 0 0 auto;
+        padding: 10px 10px 20px 10px !important;
     }
 
     .bb-modal-col-title {
@@ -244,25 +320,26 @@ body.bb-dragging-ext .bb-light-folder-content {
         padding: 8px !important;
     }
 
-    #bb-sort-modal-overlay .popup-content {
-        max-height: 50vh !important;
+}
+
+@media (max-width: 480px) {
+    #bb-sort-modal-overlay .bb-sort-modal {
+        width: 100% !important;
+        padding: 10px;
     }
 
-    @media (max-width: 480px) {
-        #bb-sort-modal-overlay .popup > div:last-child {
-            flex-direction: column !important;
-        }
+    .bb-sort-footer-actions,
+    #bb-sort-modal-overlay #bb-modal-add-folder {
+        width: 100%;
+    }
 
-        #bb-sort-modal-overlay .popup > div:last-child > div {
-            width: 100%;
-        }
+    #bb-modal-cancel,
+    #bb-modal-save {
+        flex: 1 1 0;
+    }
 
-        #bb-modal-add-folder,
-        #bb-modal-cancel,
-        #bb-modal-save {
-            width: 100% !important;
-            justify-content: center;
-        }
+    #bb-sort-modal-overlay .bb-sort-footer .menu_button {
+        min-height: 40px;
     }
 }
 
